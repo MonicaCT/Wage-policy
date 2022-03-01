@@ -1,0 +1,46 @@
+
+--- Job Nobuhiro.gms Start 07/30/15 12:25:07 WEX-VS8 23.5.1 x86/MS Windows        
+GAMS Rev 235  Copyright (C) 1987-2010 GAMS Development. All rights reserved
+Licensee: Gary Goldstein                                 G010614:2121CA-WIN
+          Decision Ware, Inc.                                        DC2807
+--- Starting compilation
+--- Nobuhiro.gms(49) 3 Mb
+--- Starting execution: elapsed 0:00:00.004
+--- Nobuhiro.gms(37) 4 Mb
+--- Generating NLP model HHmax
+--- Nobuhiro.gms(43) 6 Mb
+---   2 rows  3 columns  5 non-zeroes
+---   19 nl-code  2 nl-non-zeroes
+--- Nobuhiro.gms(43) 4 Mb
+--- Executing CONOPT: elapsed 0:00:00.013
+C O N O P T 3    Jul  4, 2010 23.5.1 WIN 18414.18495 VS8 x86/MS Windows    
+ 
+ 
+    C O N O P T 3   version 3.14U
+    Copyright (C)   ARKI Consulting and Development A/S
+                    Bagsvaerdvej 246 A
+                    DK-2880 Bagsvaerd, Denmark
+ 
+ Using default options.
+ 
+ Reading Data
+ 
+   Iter Phase Ninf   Infeasibility   RGmax    NSB   Step InItr MX OK
+      0   0        3.9998000000E+01 (Input point)
+                                Pre-triangular equations:        0
+                                Post-triangular equations:       1
+      1   0        3.9997000000E+01 (After pre-processing)
+      2   0        1.2499062500E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    13.9288090084
+ 
+   Iter Phase Ninf     Objective     RGmax    NSB   Step InItr MX OK
+      5   3        1.3928809013E+01 4.3E-09     1
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+--- Restarting execution
+--- Nobuhiro.gms(43) 0 Mb
+--- Reading solution for model HHmax
+*** Status: Normal completion
+--- Job Nobuhiro.gms Stop 07/30/15 12:25:08 elapsed 0:00:00.654

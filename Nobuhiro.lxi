@@ -1,0 +1,13 @@
+B 2 C o m p i l a t i o n
+B 58 Equation Listing    SOLVE HHmax Using NLP From line 43
+D 59 phi
+D 67 obj
+B 76 Column Listing      SOLVE HHmax Using NLP From line 43
+E 77 X
+E 93 UU
+B 102 Model Statistics    SOLVE HHmax Using NLP From line 43
+B 120 Solution Report     SOLVE HHmax Using NLP From line 43
+F 164 phi
+F 165 obj
+G 169 X
+G 176 UU

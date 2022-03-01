@@ -1,0 +1,46 @@
+
+--- Job Untitled_1.gms Start 08/04/15 16:04:30 WEX-VS8 23.5.1 x86/MS Windows        
+GAMS Rev 235  Copyright (C) 1987-2010 GAMS Development. All rights reserved
+Licensee: Gary Goldstein                                 G010614:2121CA-WIN
+          Decision Ware, Inc.                                        DC2807
+--- Starting compilation
+--- Untitled_1.gms(94) 3 Mb
+--- Starting execution: elapsed 0:00:00.043
+--- Untitled_1.gms(87) 4 Mb
+--- Generating NLP model splcge
+--- Untitled_1.gms(91) 6 Mb
+---   15 rows  15 columns  45 non-zeroes
+---   197 nl-code  24 nl-non-zeroes
+--- Untitled_1.gms(91) 4 Mb
+--- Executing CONOPT: elapsed 0:00:00.053
+C O N O P T 3    Jul  4, 2010 23.5.1 WIN 18414.18495 VS8 x86/MS Windows    
+ 
+ 
+    C O N O P T 3   version 3.14U
+    Copyright (C)   ARKI Consulting and Development A/S
+                    Bagsvaerdvej 246 A
+                    DK-2880 Bagsvaerd, Denmark
+ 
+ Using default options.
+ 
+ Reading Data
+ 
+   Iter Phase Ninf   Infeasibility   RGmax    NSB   Step InItr MX OK
+      0   0        2.7144072634E+01 (Input point)
+                                Pre-triangular equations:        0
+                                Post-triangular equations:       1
+      1   0        0.0000000000E+00 (After pre-processing)
+      2   0        0.0000000000E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    27.1440726345
+ 
+   Iter Phase Ninf     Objective     RGmax    NSB   Step InItr MX OK
+      4   3        2.7144072634E+01 0.0E+00     0
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+--- Restarting execution
+--- Untitled_1.gms(91) 0 Mb
+--- Reading solution for model splcge
+*** Status: Normal completion
+--- Job Untitled_1.gms Stop 08/04/15 16:04:31 elapsed 0:00:01.006

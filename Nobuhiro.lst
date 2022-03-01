@@ -1,0 +1,201 @@
+GAMS Rev 235  WEX-VS8 23.5.1 x86/MS Windows             07/30/15 12:25:07 Page 1
+A Household's Utility Max. Model in Ch. 3 (HHMAX,SEQ=274)
+C o m p i l a t i o n
+
+
+   2  *Definiciones de los indices
+   3  set      i    bienes      /BRD pan,
+   4                            MLK leche/
+   5           h    factores    /CAP capital,
+   6                            TRAB trabajo/;
+   7  *Definiciones de los parametros
+   8  Parameter        alpha(i)        Share parameter en la función de utilidad
+   9                   /BRD 0.2
+  10                   MLK 0.8/;
+  11   
+  12  Parameter        px(i)           Price of the i-th good
+  13                   /BRD 1
+  14                   MLK 2/;
+  15   
+  16  Parameter        pf(h)           Price of the h-th factor
+  17                   /CAP 2
+  18                   TRAB 1/;
+  19   
+  20  Parameter        FF(h)           Dotación del factor
+  21                   /CAP 10
+  22                   TRAB 20/;
+  23   
+  24  *Definición de las variables
+  25  Positive variables X(i)          Consumo del i-th bien
+  26  ;
+  27  Variable           UU            Utilidad
+  28  ;
+  29  Equation           phi           phi utilidad marginal de los ingresos
+  30                     obj           Función de utilidad
+  31  ;
+  32  *Especificación de las ecuaciones
+  33  obj..            UU                      =e= prod(i,X(i)**alpha(i));
+  34  phi..            sum(i,px(i)*X(i))       =e= sum(h,pf(h)*FF(h));
+  35   
+  36  *Setting lower Bounds on Variables to Avoid Division by zero
+  37  X.lo(i)=0.001;
+  38   
+  39  *Defining the model
+  40  Model HHmax /all/;
+  41   
+  42  *Solving the model
+  43  Solve HHmax maximizing UU using NLP;
+  44  *
+  45  *end model
+  46   
+  47   
+  48   
+  49   
+
+
+COMPILATION TIME     =        0.000 SECONDS      3 Mb  WIN235-235 Jul  2, 2010
+GAMS Rev 235  WEX-VS8 23.5.1 x86/MS Windows             07/30/15 12:25:07 Page 2
+A Household's Utility Max. Model in Ch. 3 (HHMAX,SEQ=274)
+Equation Listing    SOLVE HHmax Using NLP From line 43
+
+
+---- phi  =E=  phi utilidad marginal de los ingresos
+
+phi..  X(BRD) + 2*X(MLK) =E= 40 ;
+     
+      (LHS = 0.00300000000000011, INFES = 39.997 ****)
+     
+
+---- obj  =E=  Función de utilidad
+
+obj..  - (0.2)*X(BRD) - (0.8)*X(MLK) + UU =E= 0 ;
+     
+      (LHS = -0.001, INFES = 0.001 ****)
+     
+GAMS Rev 235  WEX-VS8 23.5.1 x86/MS Windows             07/30/15 12:25:07 Page 3
+A Household's Utility Max. Model in Ch. 3 (HHMAX,SEQ=274)
+Column Listing      SOLVE HHmax Using NLP From line 43
+
+
+---- X  Consumo del i-th bien
+
+X(BRD)
+                (.LO, .L, .UP, .M = 0.001, 0.001, +INF, 0)
+        1       phi
+      (-0.2)    obj
+        0       (OLD LEVEL ****)
+
+X(MLK)
+                (.LO, .L, .UP, .M = 0.001, 0.001, +INF, 0)
+        2       phi
+      (-0.8)    obj
+        0       (OLD LEVEL ****)
+
+
+---- UU  Utilidad
+
+UU
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       obj
+
+GAMS Rev 235  WEX-VS8 23.5.1 x86/MS Windows             07/30/15 12:25:07 Page 4
+A Household's Utility Max. Model in Ch. 3 (HHMAX,SEQ=274)
+Model Statistics    SOLVE HHmax Using NLP From line 43
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           2     SINGLE EQUATIONS            2
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3  2 projected
+NON ZERO ELEMENTS             5     NON LINEAR N-Z              2
+DERIVATIVE POOL               8     CONSTANT POOL              18
+CODE LENGTH                  19
+
+
+GENERATION TIME      =        0.000 SECONDS      4 Mb  WIN235-235 Jul  2, 2010
+
+
+EXECUTION TIME       =        0.000 SECONDS      4 Mb  WIN235-235 Jul  2, 2010
+GAMS Rev 235  WEX-VS8 23.5.1 x86/MS Windows             07/30/15 12:25:07 Page 5
+A Household's Utility Max. Model in Ch. 3 (HHMAX,SEQ=274)
+Solution Report     SOLVE HHmax Using NLP From line 43
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   HHmax               OBJECTIVE  UU
+     TYPE    NLP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  43
+
+**** SOLVER STATUS     1 Normal Completion         
+**** MODEL STATUS      2 Locally Optimal           
+**** OBJECTIVE VALUE               13.9288
+
+ RESOURCE USAGE, LIMIT          0.000      1000.000
+ ITERATION COUNT, LIMIT         5    2000000000
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T 3   version 3.14U
+    Copyright (C)   ARKI Consulting and Development A/S
+                    Bagsvaerdvej 246 A
+                    DK-2880 Bagsvaerd, Denmark
+ 
+ Using default options.
+ 
+ 
+    The model has 3 variables and 2 constraints
+    with 5 Jacobian elements, 2 of which are nonlinear.
+    The Hessian of the Lagrangian has 2 elements on the diagonal,
+    1 elements below the diagonal, and 2 nonlinear variables.
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.002 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+ 
+ Workspace           =     0.02 Mbytes
+    Estimate         =     0.02 Mbytes
+    Max used         =     0.01 Mbytes
+
+                       LOWER     LEVEL     UPPER    MARGINAL
+
+---- EQU phi           40.000    40.000    40.000     0.348      
+---- EQU obj             .         .         .        1.000      
+
+  phi  phi utilidad marginal de los ingresos
+  obj  Función de utilidad
+
+---- VAR X  Consumo del i-th bien
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD     0.001     8.000     +INF  -5.42E-10      
+MLK     0.001    16.000     +INF       .         
+
+                       LOWER     LEVEL     UPPER    MARGINAL
+
+---- VAR UU             -INF     13.929     +INF       .         
+
+  UU  Utilidad
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+
+
+EXECUTION TIME       =        0.016 SECONDS      2 Mb  WIN235-235 Jul  2, 2010
+
+
+USER: Gary Goldstein                                 G010614:2121CA-WIN
+      Decision Ware, Inc.                                        DC2807
+
+
+**** FILE SUMMARY
+
+Input      C:\Users\Mónica\Documents\Ejercicios GAMS\Nobuhiro.gms
+Output     C:\Users\Mónica\Documents\gamsdir\projdir\Nobuhiro.lst

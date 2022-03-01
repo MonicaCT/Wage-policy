@@ -1,0 +1,365 @@
+GAMS Rev 235  WEX-VS8 23.5.1 x86/MS Windows             08/06/15 12:26:54 Page 1
+A Standard CGE Model in Ch. 6 (STDCGE, SEQ=276)
+C o m p i l a t i o n
+
+
+   2   
+   3  * Definition of sets for suffix-------------------------------------------
+      -
+   4  Set      u       SAM entry       /BRD, MLK, CAP, LAB, IDT, TRF, HOH, GOV,
+   5                                   INV,EXT/
+   6           i(u)    goods           /BRD, MLK/
+   7           h(u)    factor          /CAP, LAB/;
+   8  Alias (u,v), (i,j), (h,k);
+   9  *-------------------------------------------------------------------------
+      --
+  10   
+  11  *Loading data-------------------------------------------------------------
+      ---
+  12   
+  13  Table    SAM(u,v)        social accounting matrix
+  14           BRD     MLK     CAP     LAB     IDT
+  15  BRD      21      8
+  16  MLK      17      9
+  17  CAP      20      30
+  18  LAB      15      25
+  19  IDT      5       4
+  20  TRF      1       2
+  21  HOH                      50      40
+  22  GOV                                      9
+  23  INV
+  24  EXT      13      11
+  25   
+  26  +        TRF     HOH     GOV     INV     EXT
+  27  BRD              20      19      16      8
+  28  MLK              30      14      15      4
+  29  CAP
+  30  LAB
+  31  IDT
+  32  TRF
+  33  HOH
+  34  GOV      3       23
+  35  INV              17      2               12
+  36  EXT
+  37  ;
+  38  *Loading the initial values-----------------------------------------
+  39  Parameter        Y0(j)   composite factor
+  40                   F0(h,j) the h-th factor input by the j-th firm
+  41                   X0(i,j) intermediate input
+  42                   Z0(j)   output of the j-th good
+  43                   Xp0(i)  household consumption of the i-th good
+  44                   Xg0(i)  government consumption
+  45                   Xv0(i)  investment demand
+  46                   E0(i)   exports
+  47                   M0(i)   imports
+  48                   Q0(i)   Armington's composite good
+  49                   D0(i)   domestic good
+  50                   Sp0     private saving
+  51                   Sg0     government saving
+  52                   Td0     direct tax
+  53                   Tz0(j)  production tax
+  54                   Tm0(j)  import tariff
+  55   
+  56                   FF(h)   factor endowment of the h-th factor
+  57                   Sf      foreign saving in US dollars
+  58                   pWe(i)  export price in US dollars
+  59                   pWm(i)  import price in US dollars
+  60                   tauz(i) produccion tax rate
+  61                   taum(i) import tariff rate
+  62  ;
+  63  Td0      =SAM("GOV", "HOH");
+  64  Tz0(j)   =SAM("IDT", j);
+  65  Tm0(j)   =SAM("TRF", j);
+  66   
+  67  F0(h,j)  =SAM(h,j);
+  68  Y0(j)    =sum(h, F0(h,j));
+  69  X0(i,j)  =SAM(i,j);
+  70  Z0(j)    =Y0(j)+sum(i, X0(i,j));
+  71  M0(i)    =SAM("EXT",i);
+  72   
+  73  tauz(j)  =Tz0(j)/Z0(j);
+  74  taum(j)  =Tm0(j)/M0(j);
+  75   
+  76  Xp0(i)   =SAM(i,"HOH");
+  77  FF(h)    =SAM("HOH",h);
+  78   
+  79  Xg0(i)   =SAM(i,"GOV");
+  80  Xv0(i)   =SAM(i,"INV");
+  81  E0(i)    =SAM(i,"EXT");
+  82  Q0(i)    =Xp0(i)+Xg0(i)+Xv0(i)+ sum(j, X0(i,j));
+  83  D0(i)    =(1+tauz(i))*Z0(i)-E0(i);
+  84  Sp0      =SAM("INV","HOH");
+  85  Sg0      =SAM("INV","GOV");
+  86  Sf       =SAM("INV","EXT");
+  87   
+  88  pWe(i)   =1;
+  89  pWm(i)   =1;
+  90   
+  91  Display Y0,F0,X0,Z0,Xp0,Xg0,Xv0,E0,M0,Q0,D0,Sp0,Sg0,Td0,Tm0,FF,Sf,tauz,tau
+      m;
+  92   
+  93  *Calibration-------------------------------------------------------------
+  94  Parameter        sigma(i)        elasticity of substitution
+  95                   psi(i)          elasticity of transformation
+  96                   eta(i)          substitution elasticity parameter
+  97                   phi(i)          transformation elasticity parameter
+  98  ;
+  99  sigma(i) =2;
+ 100  psi(i)   =2;
+ 101  eta(i)   =(sigma(i)-1)/sigma(i);
+ 102  phi(i)   =(psi(i)+1)/psi(i);
+ 103   
+ 104  Parameter        alpha(i)        share parameter in utility func.
+ 105                   beta(h,j)       share parameter in production func.
+ 106                   b(j)            scale parameter in production func.
+ 107                   ax(i,j)         intermediate input requirement coeff.
+ 108                   ay(j)           composite fact. input req. coeff.
+ 109                   mu(i)           government consumption share
+ 110                   lambda(i)       investment demand share
+ 111                   deltam(i)       share par. in Armington func.
+ 112                   deltad(i)       share par. in Armington func.
+ 113                   gamma(i)        scale par. in Armington func.
+ 114                   xid(i)          share par. in transformation func.
+ 115                   xie(i)          share par, in transformation func.
+ 116                   theta(i)        scale par. in transformation func.
+ 117                   ssp             average propensity for private saving
+ 118                   ssg             average propensity for gov. saving
+ 119                   taud            direct tax rate
+ 120  ;
+ 121  alpha(i)=Xp0(i)/sum(j,Xp0(j));
+ 122  beta(h,j)=F0(h,j)/sum(k,F0(k,j));
+ 123  b(j)     =Y0(j)/prod(h,F0(h,j)**beta(h,j));
+ 124   
+ 125  ax(i,j)=X0(i,j)/Z0(j);
+ 126  ay(j)    =Y0(j)/Z0(j);
+ 127  mu(i)    =Xg0(i)/sum(j, Xg0(j));
+ 128  lambda(i)=Xv0(i)/(Sp0+Sg0+Sf);
+ 129   
+ 130  deltam(i)=(1+taum(i))*M0(i)**(1-eta(i))
+ 131            /((1+taum(i))*M0(i)**(1-eta(i))+D0(i)**(1-eta(i)));
+ 132  deltad(i)=D0(i)**(1-eta(i))
+ 133            /((1+taum(i))*M0(i)**(1-eta(i))+D0(i)**(1-eta(i)));
+ 134  gamma(i) =Q0(i)/(deltam(i)*M0(i)**eta(i)+deltad(i)*D0(i)**eta(i))
+ 135            **(1/eta(i));
+ 136   
+ 137  xie(i)=E0(i)**(1-phi(i))/(E0(i)**(1-phi(i))+D0(i)**(1-phi(i)));
+ 138  xid(i)=D0(i)**(1-phi(i))/(E0(i)**(1-phi(i))+D0(i)**(1-phi(i)));
+ 139  theta(i)=Z0(i)
+ 140           /(xie(i)*E0(i)**phi(i)+xid(i)+D0(i)**phi(i))**(1/phi(i));
+ 141   
+ 142  ssp      =Sp0/sum(h,FF(h));
+ 143  ssg      =Sg0/(Td0+sum(j, Tz0(j))+sum(j,Tm0(j)));
+ 144  taud     =Td0/sum(h,FF(h));
+ 145   
+ 146  Display alpha,beta,b,ax,ay,mu,lambda,deltam,deltad,gamma,xie,
+ 147           xid,theta,ssp,ssg,taud;
+ 148  *---------------------------------------------------------------
+ 149   
+ 150  * Defining model system------------------------
+ 151  Variable         Y(j)    composite factor
+ 152                   F(h,j)  the h-th factor input by the j-th firm
+ 153                   X(i,j)  intermediate input
+ 154                   Z(j)    output of the j-th good
+ 155                   Xp(i)   household consumption of the i-th good
+ 156                   Xg(i)   government consumption
+ 157                   Xv(i)   investment demand
+ 158                   E(i)    exports
+ 159                   M(i)    imports
+ 160                   Q(i)    Armington's composite good
+ 161                   D(i)    domestic good
+ 162   
+ 163                   pf(h)   the h-th factor price
+ 164                   py(j)   composite factor price
+ 165                   pz(j)   supply price of the i-th good
+ 166                   pq(i)   Armington's composite good price
+ 167                   pe(i)   export price in local currency
+ 168                   pm(i)   import price in local currency
+ 169                   pd(i)   the i-th domestic good price
+ 170                   epsilon exchange rate
+ 171   
+ 172                   Sp      private saving
+ 173                   Sg      government saving
+ 174                   Td      direct tax
+ 175                   Tz(j)   production tax
+ 176                   Tm(i)   import tariff
+ 177   
+ 178                   UU      utility [fictitious]
+ 179  ;
+ 180  Equation         eqpy(j)         composite factor agg. func.
+ 181                   eqF(h,j)        factor demand function
+ 182                   eqX(i,j)        intermediate demand function
+ 183                   eqY(j)          composite factor demand function
+ 184                   eqpzs(j)        unit cost function
+ 185   
+ 186                   eqTd            direct tax revenue function
+ 187                   eqTz            prodution tax revenue function
+ 188                   eqTm(i)         import tariff revenue function
+ 189                   eqXg(i)         government demand function
+ 190   
+ 191                   eqXv(i)         investment demand function
+ 192                   eqSp            production tax revenue function
+ 193                   eqSg            government saving function
+ 194   
+ 195                   eqXp(i)         household demand function
+ 196   
+ 197                   eqpe(i)         world export price equation
+ 198                   eqpm(i)         world import price  equation
+ 199                   eqepsilon       balance of payments
+ 200   
+ 201                   eqpqs(i)        Armingotn function
+ 202                   eqM(i)          import demand function
+ 203                   eqD(i)          domestic good demand function
+ 204   
+ 205                   eqpzd(i)        transformation function
+ 206                   eqDs (i)        domestic good supply function
+ 207                   eqE(i)          export supply function
+ 208   
+ 209                   eqpqd(i)        market clearing cond. for comp. good
+ 210                   eqpf(h)         factor market clearing condition
+ 211   
+ 212                   obj     utility function [fictitious]
+ 213  ;
+ 214  *[domestic production]-
+ 215  eqpy(j)..        Y(j)            =e= b(j)*prod(h,F(h,j)**beta(h,j));
+ 216  eqF(h,j)..       F(h,j)          =e= beta(h,j)*py(j)*Y(j)/pf(h);
+ 217  eqX(i,j)..       X(i,j)          =e= ax(i,j)*Z(j);
+ 218  eqY(j)..         Y(j)            =e= ay(j)*Z(j);
+ 219  eqpzs(j)..       pz(j)           =e=ay(j)*py(j)+sum(i,ax(i,j)*pq(i));
+ 220   
+ 221  *[government behavior]--
+ 222  eqTd..           Td              =e= taud*sum(h, pf(h)*FF(h));
+ 223  eqTz(j)..        Tz(j)           =e= tauz(j)*pz(j)*Z(j);
+ 224  eqTm(i)..        Tm(i)           =e= taum(i)*pm(i)*M(i);
+ 225  eqXg(i)..        Xg(i)           =e= mu(i)*(Td+sum(j,Tz(j))+sum(j,Tm(j))
+ 226                                       -Sg)/pq(i);
+ 227   
+ 228  *[investment behavior]---
+ 229  eqXv(i)..        Xv(i)           =e= lambda(i)*(Sp+Sg+epsilon*Sf)/pq(i);
+ 230   
+ 231  *[savings]---
+ 232  eqSp..           Sp              =e= ssp*sum(h,pf(h)*FF(h));
+ 233  eqSg..           Sg              =e= ssg*(Td+sum(j, Tz(j))*sum(j, Tm(j)));
+ 234   
+ 235  *[household consumption]---------
+ 236  eqXp(i)..        Xp(i)           =e= alpha(i)*(sum(h, pf(h)*FF(h))-Sp-Td)
+ 237                                       /pq(i);
+ 238  *[International trate]
+ 239  eqpe(i)..        pe(i)   =e=epsilon*pWe(i);
+ 240  eqpm(i)..        pm(i)   =e=epsilon*pWm(i);
+ 241  eqepsilon..      sum(i,pWe(i)*E(i))+SF
+ 242                           =e=sum(i,pWm(i)*M(i));
+ 243   
+ 244  *[Armington function]
+ 245  eqpqs(i)..       Q(i)    =e=gamma(i)*(deltam(i)*M(i)**eta(i)+deltad(i)
+ 246                              *D(i)**eta(i))**(i/eta(i));
+****                                                $148,130
+ 247  eqM(i)..         M(i)    =e=(gamma(i)**eta(i)*deltam(i)*pq(i)
+ 248                              /((1+taum(i))*pm(i)))**(1/(1-eta(i)))*Q(i);
+ 249  eqD(i)..         D(i)    =e=(gamma(i)**eta(i)*deltad(i)*pq(i)/pd(i))
+ 250                               **(1/(1-eta(i)))*Q(i);
+ 251   
+ 252  *[Transformation function]
+ 253  eqpzd(i)..       Z(i)    =e=theta(i)*(xie(i)*E(i)**phi(i)+xid(i)
+ 254                              *D(i)**phi(i))**(1/phi(i));
+ 255  eqE(i)..         E(i)    =e=(theta(i)**phi(i)*xie(i)*(1+tauz(i))*pz(i)
+ 256                              /pe(i))**(1/(1-phi(i)))*Z(i);
+ 257  eqDs(i)..        D(i)    =e=(theta(i)**phi(i)*xid(i)*(1+tauz(i)*pz(i)
+ 258                              /pd(i))**(1/(1-phi(i)))*Z(i);
+****                                                          $8
+ 259   
+ 260  *[market clearing condition]
+ 261  eqpqd(i)..       Q(i)    =e=Xp(i)+Xg(i)+Xv(i)+sum(j,X(i,j));
+ 262  eqpf(h)..        sum(j,F(h,j))   =e=FF(h);
+ 263   
+ 264  *[fictitions objetive function]
+ 265  obj..            UU      =e=prod(i,Xp(i)**alpha(i));
+ 266   
+ 267  *Initializing variables
+ 268  Y.l(j)   =Y0(j);
+ 269  F.l(h,j) =F0(h,j);
+ 270  X.l(i,j) =X0(i,j);
+ 271  Z.l(j)   =Z0(j);
+ 272  Xp.l(i)  =Xp0(i);
+ 273  Xg.l(i)  =Xg0(i);
+ 274  Xv.l(i)  =Xv0(i);
+ 275  E.l(i)   =E0(i);
+ 276  M.l(i)   =M0(i);
+ 277  Q.l(i)   =Q0(i);
+ 278  D.l(i)   =D0(i);
+ 279  pf.l(h)  =1;
+ 280  py.l(j)  =1;
+ 281  pz.l(j)  =1;
+ 282  pq.l(i)  =1;
+ 283  pe.l(i)  =1;
+ 284  pm.l(i)  =1;
+ 285  pd.l(i)  =1;
+ 286  epsilon.l=1;
+ 287  Sp.l     =Sp0;
+ 288  Sg.l     =Sg0;
+ 289  Td.l     =Td0;
+ 290  Tz.l(j)  =Tz0(j);
+ 291  Tm.l(i)  =Tm0(i);
+ 292   
+ 293  *Setting lower bounds to avoid division by zero
+ 294  Y.lo(j)  =0.00001;
+ 295  F.lo(h,j)=0.00001;
+ 296  X.lo(i,j)=0.00001;
+ 297  Z.lo(j)=0.00001;
+ 298  Xp.lo(i)=0.00001;
+ 299  Xg.lo(i)=0.00001;
+ 300  Xv.lo(i)=0.00001;
+ 301  E.lo(i)=0.00001;
+ 302  M.lo(i)=0.00001;
+ 303  Q.lo(i)=0.00001;
+ 304  D.lo(i)=0.00001;
+ 305  pf.lo(h)=0.00001;
+ 306  py.lo(j)=0.00001;
+ 307  pz.lo(j)=0.00001;
+ 308  pq.lo(i)=0.00001;
+ 309  pe.lo(i)=0.00001;
+ 310  pm.lo(i)=0.00001;
+ 311  pd.lo(i)=0.00001;
+ 312  epsilon.lo=0.00001;
+ 313  Sp.lo=0.00001;
+ 314  Sg.lo=0.00001;
+ 315  Td.lo=0.00001;
+ 316  Tz.lo(j)=0.0000;
+ 317  Tm.lo(i)=0.0000;
+ 318  *
+ 319  *numerarie
+ 320  pf.fx("LAB")=1;
+ 321  *
+ 322  *Defining and solving the model
+ 323  Model stdcge /all/;
+ 324  Solve stdcge maximizing UU using nlp;
+****                                      $257
+
+**** LIST OF STRAY NAMES - CHECK DECLARATIONS FOR SPURIOUS COMMAS
+**** STRAY NAME in OF TYPE PARAM
+GAMS Rev 235  WEX-VS8 23.5.1 x86/MS Windows             08/06/15 12:26:54 Page 2
+A Standard CGE Model in Ch. 6 (STDCGE, SEQ=276)
+Error Messages
+
+
+  8  ')' expected
+130  Division not defined for a set
+148  Dimension different - The symbol is referenced with more/less
+        indices as declared
+257  Solve statement not checked because of previous errors
+
+**** 4 ERROR(S)   0 WARNING(S)
+
+
+COMPILATION TIME     =        0.062 SECONDS      3 Mb  WIN235-235 Jul  2, 2010
+
+
+USER: Gary Goldstein                                 G010614:2121CA-WIN
+      Decision Ware, Inc.                                        DC2807
+
+
+**** FILE SUMMARY
+
+Input      C:\Users\Mónica\Desktop\Untitled_4.gms
+Output     C:\Users\Mónica\Documents\gamsdir\projdir\Untitled_4.lst
+
+**** USER ERROR(S) ENCOUNTERED

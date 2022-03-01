@@ -1,0 +1,22 @@
+
+--- Job Untitled_4.gms Start 08/06/15 12:26:54 WEX-VS8 23.5.1 x86/MS Windows        
+GAMS Rev 235  Copyright (C) 1987-2010 GAMS Development. All rights reserved
+Licensee: Gary Goldstein                                 G010614:2121CA-WIN
+          Decision Ware, Inc.                                        DC2807
+--- Starting compilation
+--- Untitled_4.gms(246) 3 Mb 2 Errors
+*** Error 148 in C:\Users\Mónica\Desktop\Untitled_4.gms
+    Dimension different - The symbol is referenced with more/less
+       indices as declared
+*** Error 130 in C:\Users\Mónica\Desktop\Untitled_4.gms
+    Division not defined for a set
+--- Untitled_4.gms(258) 3 Mb 3 Errors
+*** Error   8 in C:\Users\Mónica\Desktop\Untitled_4.gms
+    ')' expected
+--- Untitled_4.gms(324) 3 Mb 4 Errors
+*** Error 257 in C:\Users\Mónica\Desktop\Untitled_4.gms
+    Solve statement not checked because of previous errors
+--- Untitled_4.gms(324) 3 Mb 4 Errors
+*** Status: Compilation error(s)
+--- Job Untitled_4.gms Stop 08/06/15 12:26:54 elapsed 0:00:00.080
+Exit code = 2

@@ -1,0 +1,1574 @@
+GAMS Rev 235  WEX-VS8 23.5.1 x86/MS Windows             08/07/15 16:44:53 Page 1
+A Standard CGE Model in Ch. 6 (STDCGE, SEQ=276)
+C o m p i l a t i o n
+
+
+   2   
+   3  * Definition of sets for suffix-------------------------------------------
+      -
+   4  Set      u       SAM entry       /BRD, MLK, CAP, LAB, IDT, TRF, HOH, GOV,
+   5                                   INV,EXT/
+   6           i(u)    goods           /BRD, MLK/
+   7           h(u)    factor          /CAP, LAB/;
+   8  Alias (u,v), (i,j), (h,k);
+   9  *-------------------------------------------------------------------------
+      --
+  10   
+  11  *Loading data-------------------------------------------------------------
+      ---
+  12   
+  13  Table    SAM(u,v)        social accounting matrix
+  14           BRD     MLK     CAP     LAB     IDT
+  15  BRD      21      8
+  16  MLK      17      9
+  17  CAP      20      30
+  18  LAB      15      25
+  19  IDT      5       4
+  20  TRF      1       2
+  21  HOH                      50      40
+  22  GOV                                      9
+  23  INV
+  24  EXT      13      11
+  25   
+  26  +        TRF     HOH     GOV     INV     EXT
+  27  BRD              20      19      16      8
+  28  MLK              30      14      15      4
+  29  CAP
+  30  LAB
+  31  IDT
+  32  TRF
+  33  HOH
+  34  GOV      3       23
+  35  INV              17      2               12
+  36  EXT
+  37  ;
+  38  *Loading the initial values-----------------------------------------
+  39  Parameter        Y0(j)   composite factor
+  40                   F0(h,j) the h-th factor input by the j-th firm
+  41                   X0(i,j) intermediate input
+  42                   Z0(j)   output of the j-th good
+  43                   Xp0(i)  household consumption of the i-th good
+  44                   Xg0(i)  government consumption
+  45                   Xv0(i)  investment demand
+  46                   E0(i)   exports
+  47                   M0(i)   imports
+  48                   Q0(i)   Armington's composite good
+  49                   D0(i)   domestic good
+  50                   Sp0     private saving
+  51                   Sg0     government saving
+  52                   Td0     direct tax
+  53                   Tz0(j)  production tax
+  54                   Tm0(j)  import tariff
+  55   
+  56                   FF(h)   factor endowment of the h-th factor
+  57                   Sf      foreign saving in US dollars
+  58                   pWe(i)  export price in US dollars
+  59                   pWm(i)  import price in US dollars
+  60                   tauz(i) produccion tax rate
+  61                   taum(i) import tariff rate
+  62  ;
+  63  Td0      =SAM("GOV", "HOH");
+  64  Tz0(j)   =SAM("IDT", j);
+  65  Tm0(j)   =SAM("TRF", j);
+  66   
+  67  F0(h,j)  =SAM(h,j);
+  68  Y0(j)    =sum(h, F0(h,j));
+  69  X0(i,j)  =SAM(i,j);
+  70  Z0(j)    =Y0(j)+sum(i, X0(i,j));
+  71  M0(i)    =SAM("EXT",i);
+  72   
+  73  tauz(j)  =Tz0(j)/Z0(j);
+  74  taum(j)  =Tm0(j)/M0(j);
+  75   
+  76  Xp0(i)   =SAM(i,"HOH");
+  77  FF(h)    =SAM("HOH",h);
+  78   
+  79  Xg0(i)   =SAM(i,"GOV");
+  80  Xv0(i)   =SAM(i,"INV");
+  81  E0(i)    =SAM(i,"EXT");
+  82  Q0(i)    =Xp0(i)+Xg0(i)+Xv0(i)+ sum(j, X0(i,j));
+  83  D0(i)    =(1+tauz(i))*Z0(i)-E0(i);
+  84  Sp0      =SAM("INV","HOH");
+  85  Sg0      =SAM("INV","GOV");
+  86  Sf       =SAM("INV","EXT");
+  87   
+  88  pWe(i)   =1;
+  89  pWm(i)   =1;
+  90   
+  91  Display Y0,F0,X0,Z0,Xp0,Xg0,Xv0,E0,M0,Q0,D0,Sp0,Sg0,Td0,Tz0,Tm0,FF,Sf,tauz
+      ,taum;
+  92   
+  93  *Calibration-------------------------------------------------------------
+  94  Parameter        sigma(i)        elasticity of substitution
+  95                   psi(i)          elasticity of transformation
+  96                   eta(i)          substitution elasticity parameter
+  97                   phi(i)          transformation elasticity parameter
+  98  ;
+  99  sigma(i) =2;
+ 100  psi(i)   =2;
+ 101  eta(i)   =(sigma(i)-1)/sigma(i);
+ 102  phi(i)   =(psi(i)+1)/psi(i);
+ 103   
+ 104  Parameter        alpha(i)        share parameter in utility func.
+ 105                   beta(h,j)       share parameter in production func.
+ 106                   b(j)            scale parameter in production func.
+ 107                   ax(i,j)         intermediate input requirement coeff.
+ 108                   ay(j)           composite fact. input req. coeff.
+ 109                   mu(i)           government consumption share
+ 110                   lambda(i)       investment demand share
+ 111                   deltam(i)       share par. in Armington func.
+ 112                   deltad(i)       share par. in Armington func.
+ 113                   gamma(i)        scale par. in Armington func.
+ 114                   xid(i)          share par. in transformation func.
+ 115                   xie(i)          share par. in transformation func.
+ 116                   theta(i)        scale par. in transformation func.
+ 117                   ssp             average propensity for private saving
+ 118                   ssg             average propensity for gov. saving
+ 119                   taud            direct tax rate
+ 120  ;
+ 121  alpha(i)=Xp0(i)/sum(j,Xp0(j));
+ 122  beta(h,j)=F0(h,j)/sum(k,F0(k,j));
+ 123  b(j)     =Y0(j)/prod(h,F0(h,j)**beta(h,j));
+ 124   
+ 125  ax(i,j)=X0(i,j)/Z0(j);
+ 126  ay(j)    =Y0(j)/Z0(j);
+ 127  mu(i)    =Xg0(i)/sum(j, Xg0(j));
+ 128  lambda(i)=Xv0(i)/(Sp0+Sg0+Sf);
+ 129   
+ 130  deltam(i)=(1+taum(i))*M0(i)**(1-eta(i))
+ 131            /((1+taum(i))*M0(i)**(1-eta(i))+D0(i)**(1-eta(i)));
+ 132  deltad(i)=D0(i)**(1-eta(i))
+ 133            /((1+taum(i))*M0(i)**(1-eta(i))+D0(i)**(1-eta(i)));
+ 134  gamma(i) =Q0(i)/(deltam(i)*M0(i)**eta(i)+deltad(i)*D0(i)**eta(i))
+ 135            **(1/eta(i));
+ 136   
+ 137  xie(i)=E0(i)**(1-phi(i))/(E0(i)**(1-phi(i))+D0(i)**(1-phi(i)));
+ 138  xid(i)=D0(i)**(1-phi(i))/(E0(i)**(1-phi(i))+D0(i)**(1-phi(i)));
+ 139  theta(i)=Z0(i)
+ 140           /(xie(i)*E0(i)**phi(i)+xid(i)+D0(i)**phi(i))**(1/phi(i));
+ 141   
+ 142  ssp      =Sp0/sum(h,FF(h));
+ 143  ssg      =Sg0/(Td0+sum(j, Tz0(j))+sum(j,Tm0(j)));
+ 144  taud     =Td0/sum(h,FF(h));
+ 145   
+ 146  Display alpha,beta,b,ax,ay,mu,lambda,deltam,deltad,gamma,xie,
+ 147           xid,theta,ssp,ssg,taud;
+ 148  *---------------------------------------------------------------
+ 149   
+ 150  * Defining model system------------------------
+ 151  Variable         Y(j)    composite factor
+ 152                   F(h,j)  the h-th factor input by the j-th firm
+ 153                   X(i,j)  intermediate input
+ 154                   Z(j)    output of the j-th good
+ 155                   Xp(i)   household consumption of the i-th good
+ 156                   Xg(i)   government consumption
+ 157                   Xv(i)   investment demand
+ 158                   E(i)    exports
+ 159                   M(i)    imports
+ 160                   Q(i)    Armington's composite good
+ 161                   D(i)    domestic good
+ 162   
+ 163                   pf(h)   the h-th factor price
+ 164                   py(j)   composite factor price
+ 165                   pz(j)   supply price of the i-th good
+ 166                   pq(i)   Armington's composite good price
+ 167                   pe(i)   export price in local currency
+ 168                   pm(i)   import price in local currency
+ 169                   pd(i)   the i-th domestic good price
+ 170                   epsilon exchange rate
+ 171   
+ 172                   Sp      private saving
+ 173                   Sg      government saving
+ 174                   Td      direct tax
+ 175                   Tz(j)   production tax
+ 176                   Tm(i)   import tariff
+ 177   
+ 178                   UU      utility [fictitious]
+ 179  ;
+ 180  Equation         eqpy(j)         composite factor agg. func.
+ 181                   eqF(h,j)        factor demand function
+ 182                   eqX(i,j)        intermediate demand function
+ 183                   eqY(j)          composite factor demand function
+ 184                   eqpzs(j)        unit cost function
+ 185   
+ 186                   eqTd            direct tax revenue function
+ 187                   eqTz(j)         production tax revenue function
+ 188                   eqTm(i)         import tariff revenue funtion
+ 189                   eqXg(i)         government demand funtion
+ 190   
+ 191                   eqXv(i)         investment demand function
+ 192                   eqSp            production tax revenue function
+ 193                   eqSg            government saving function
+ 194   
+ 195                   eqXp(i)         household demand function
+ 196   
+ 197                   eqpe(i)         world export price equation
+ 198                   eqpm(i)         world import price  equation
+ 199                   eqepsilon       balance of payments
+ 200   
+ 201                   eqpqs(i)        Armingotn function
+ 202                   eqM(i)          import demand function
+ 203                   eqD(i)          domestic good demand function
+ 204   
+ 205                   eqpzd(i)        transformation function
+ 206                   eqDs(i)        domestic good supply function
+ 207                   eqE(i)          export supply function
+ 208   
+ 209                   eqpqd(i)        market clearing cond. for comp. good
+ 210                   eqpf(h)         factor market clearing condition
+ 211   
+ 212                   obj     utility function [fictitious]
+ 213  ;
+ 214  *[domestic production]-
+ 215  eqpy(j)..        Y(j)            =e= b(j)*prod(h,F(h,j)**beta(h,j));
+ 216  eqF(h,j)..       F(h,j)          =e= beta(h,j)*py(j)*Y(j)/pf(h);
+ 217  eqX(i,j)..       X(i,j)          =e= ax(i,j)*Z(j);
+ 218  eqY(j)..         Y(j)           =e= ay(j)*Z(j);
+ 219  eqpzs(j)..       pz(j)           =e=ay(j)*py(j)+sum(i,ax(i,j)*pq(i));
+ 220   
+ 221  *[government behavior]--
+ 222  eqTd..           Td              =e= taud*sum(h, pf(h)*FF(h));
+ 223  eqTz(j)..        Tz(j)           =e= tauz(j)*pz(j)*Z(j);
+ 224  eqTm(i)..        Tm(i)           =e= taum(i)*pm(i)*M(i);
+ 225  eqXg(i)..        Xg(i)           =e= mu(i)*(Td+sum(j,Tz(j))+sum(j,Tm(j))
+ 226                                       -Sg)/pq(i);
+ 227   
+ 228  *[investment behavior]---
+ 229  eqXv(i)..        Xv(i)           =e= lambda(i)*(Sp+Sg+epsilon*Sf)/pq(i);
+ 230   
+ 231  *[savings]---
+ 232  eqSp..           Sp              =e= ssp*sum(h,pf(h)*FF(h));
+ 233  eqSg..           Sg              =e= ssg*(Td+sum(j, Tz(j))*sum(j, Tm(j)));
+ 234   
+ 235  *[household consumption]---------
+ 236  eqXp(i)..        Xp(i)           =e= alpha(i)*(sum(h, pf(h)*FF(h))-Sp-Td)
+ 237                                       /pq(i);
+ 238  *[international trade]--------------
+ 239  eqpe(i)..        pe(i)   =e= epsilon*pWe(i);
+ 240  eqpm(i)..        pm(i)   =e= epsilon*pWm(i);
+ 241  eqepsilon..      sum(i,pWe(i)*E(i))+Sf
+ 242                           =e= sum(i,pWm(i)*M(i));
+ 243   
+ 244  *[Armington function]---------
+ 245  eqpqs(i)..       Q(i)    =e= gamma(i)*(deltam(i)*M(i)**eta(i)+deltad(i)
+ 246                               *D(i)**eta(i))**(1/eta(i));
+ 247  eqM(i)..         M(i)    =e= (gamma(i)**eta(i)*deltam(i)*pq(i)
+ 248                               /((1+taum(i))*pm(i)))**(1/(1-eta(i)))*Q(i);
+ 249  eqD(i)..         D(i)    =e= (gamma(i)**eta(i)*deltad(i)*pq(i)/pd(i))
+ 250                               **(1/(1-eta(i)))*Q(i);
+ 251   
+ 252  *[Transformation function]--------
+ 253  eqpzd(i)..       Z(i)    =e= theta(i)*(xie(i)*E(i)**phi(i)+xid(i)
+ 254                               *D(i)**phi(i))**(1/phi(i));
+ 255  eqE(i)..         E(i)    =e= (theta(i)**phi(i)*xie(i)*(1+tauz(i))*pz(i)
+ 256                               /pd(i))**(1/(1-phi(i)))*Z(i);
+ 257  eqDs(i)..        D(i)    =e= (theta(i)**phi(i)*xid(i)*(1+tauz(i))*pz(i)
+ 258                               /pd(i))**(1/(1-phi(i)))*Z(i);
+ 259   
+ 260  *[market clearing condition]
+ 261  eqpqd(i)..       Q(i)    =e= Xp(i)+Xg(i)+Xv(i)+sum(j,X(i,j));
+ 262  eqpf(h)..        sum(j,F(h,j))   =e= FF(h);
+ 263   
+ 264  *[fictitious objective function]
+ 265  obj..            UU      =e= prod(i,Xp(i)**alpha(i));
+ 266  *---------------------
+ 267   
+ 268  * Initializing variables---------------
+ 269  Y.l(j)   =Y0(j);
+ 270  F.l(h,j) =F0(h,j);
+ 271  X.l(i,j) =X0(i,j);
+ 272  Z.l(j)   =Z0(j);
+ 273  Xp.l(i)  =Xp0(i);
+ 274  Xg.l(i)  =Xg0(i);
+ 275  Xv.l(i)  =Xv0(i);
+ 276  E.l(i)   =E0(i);
+ 277  M.l(i)   =M0(i);
+ 278  Q.l(i)   =Q0(i);
+ 279  D.l(i)   =D0(i);
+ 280  pf.l(h)  =1;
+ 281  py.l(j)  =1;
+ 282  pz.l(j)  =1;
+ 283  pq.l(i)  =1;
+ 284  pe.l(i)  =1;
+ 285  pm.l(i)  =1;
+ 286  pd.l(i)  =1;
+ 287  epsilon.l=1;
+ 288  Sp.l     =Sp0;
+ 289  Sg.l     =Sg0;
+ 290  Td.l     =Td0;
+ 291  Tz.l(j)  =Tz0(j);
+ 292  Tm.l(i)  =Tm0(i);
+ 293  *-------------
+ 294   
+ 295  *Setting lower bounds to avoid division by zero-----
+ 296  Y.lo(j)   =0.00001;
+ 297  F.lo(h,j)   =0.00001;
+ 298  X.lo(i,j)   =0.00001;
+ 299  Z.lo(j)   =0.00001;
+ 300  Xp.lo(i)   =0.00001;
+ 301  Xg.lo(i)   =0.00001;
+ 302  Xv.lo(i)   =0.00001;
+ 303  E.lo(i)   =0.00001;
+ 304  M.lo(i)   =0.00001;
+ 305  Q.lo(i)   =0.00001;
+ 306  D.lo(i)   =0.00001;
+ 307  pf.lo(h)   =0.00001;
+ 308  py.lo(j)   =0.00001;
+ 309  pz.lo(j)   =0.00001;
+ 310  pq.lo(i)   =0.00001;
+ 311  pe.lo(i)   =0.00001;
+ 312  pm.lo(i)   =0.00001;
+ 313  pd.lo(i)   =0.00001;
+ 314  epsilon.lo   =0.00001;
+ 315  Sp.lo   =0.00001;
+ 316  Sg.lo   =0.00001;
+ 317  Td.lo   =0.00001;
+ 318  Tz.lo(j)   =0.0000;
+ 319  Tm.lo(i)   =0.0000;
+ 320  *--------------
+ 321  *numeraire-----
+ 322  pf.fx("LAB")=1;
+ 323  *------------
+ 324  *defining and solving the model-----------
+ 325  Model stdcge /all/;
+ 326  Solve stdcge maximizing UU using nlp;
+
+
+COMPILATION TIME     =        0.000 SECONDS      3 Mb  WIN235-235 Jul  2, 2010
+GAMS Rev 235  WEX-VS8 23.5.1 x86/MS Windows             08/07/15 16:44:53 Page 2
+A Standard CGE Model in Ch. 6 (STDCGE, SEQ=276)
+E x e c u t i o n
+
+
+----     91 PARAMETER Y0  composite factor
+
+BRD 35.000,    MLK 55.000
+
+
+----     91 PARAMETER F0  the h-th factor input by the j-th firm
+
+            BRD         MLK
+
+CAP      20.000      30.000
+LAB      15.000      25.000
+
+
+----     91 PARAMETER X0  intermediate input
+
+            BRD         MLK
+
+BRD      21.000       8.000
+MLK      17.000       9.000
+
+
+----     91 PARAMETER Z0  output of the j-th good
+
+BRD 73.000,    MLK 72.000
+
+
+----     91 PARAMETER Xp0  household consumption of the i-th good
+
+BRD 20.000,    MLK 30.000
+
+
+----     91 PARAMETER Xg0  government consumption
+
+BRD 19.000,    MLK 14.000
+
+
+----     91 PARAMETER Xv0  investment demand
+
+BRD 16.000,    MLK 15.000
+
+
+----     91 PARAMETER E0  exports
+
+BRD 8.000,    MLK 4.000
+
+
+----     91 PARAMETER M0  imports
+
+BRD 13.000,    MLK 11.000
+
+
+----     91 PARAMETER Q0  Armington's composite good
+
+BRD 84.000,    MLK 85.000
+
+
+----     91 PARAMETER D0  domestic good
+
+BRD 70.000,    MLK 72.000
+
+
+----     91 PARAMETER Sp0                  =       17.000  private saving
+            PARAMETER Sg0                  =        2.000  government saving
+            PARAMETER Td0                  =       23.000  direct tax
+
+----     91 PARAMETER Tz0  production tax
+
+BRD 5.000,    MLK 4.000
+
+
+----     91 PARAMETER Tm0  import tariff
+
+BRD 1.000,    MLK 2.000
+
+
+----     91 PARAMETER FF  factor endowment of the h-th factor
+
+CAP 50.000,    LAB 40.000
+
+
+----     91 PARAMETER Sf                   =       12.000  foreign saving in US 
+                                                           dollars
+
+----     91 PARAMETER tauz  produccion tax rate
+
+BRD 0.068,    MLK 0.056
+
+
+----     91 PARAMETER taum  import tariff rate
+
+BRD 0.077,    MLK 0.182
+
+
+----    146 PARAMETER alpha  share parameter in utility func.
+
+BRD 0.400,    MLK 0.600
+
+
+----    146 PARAMETER beta  share parameter in production func.
+
+            BRD         MLK
+
+CAP       0.571       0.545
+LAB       0.429       0.455
+
+
+----    146 PARAMETER b  scale parameter in production func.
+
+BRD 1.980,    MLK 1.992
+
+
+----    146 PARAMETER ax  intermediate input requirement coeff.
+
+            BRD         MLK
+
+BRD       0.288       0.111
+MLK       0.233       0.125
+
+
+----    146 PARAMETER ay  composite fact. input req. coeff.
+
+BRD 0.479,    MLK 0.764
+
+
+----    146 PARAMETER mu  government consumption share
+
+BRD 0.576,    MLK 0.424
+
+
+----    146 PARAMETER lambda  investment demand share
+
+BRD 0.516,    MLK 0.484
+
+
+----    146 PARAMETER deltam  share par. in Armington func.
+
+BRD 0.317,    MLK 0.316
+
+
+----    146 PARAMETER deltad  share par. in Armington func.
+
+BRD 0.683,    MLK 0.684
+
+
+----    146 PARAMETER gamma  scale par. in Armington func.
+
+BRD 1.786,    MLK 1.810
+
+
+----    146 PARAMETER xie  share par. in transformation func.
+
+BRD 0.747,    MLK 0.809
+
+
+----    146 PARAMETER xid  share par. in transformation func.
+
+BRD 0.253,    MLK 0.191
+
+
+----    146 PARAMETER theta  scale par. in transformation func.
+
+BRD 1.023,    MLK 0.993
+
+
+----    146 PARAMETER ssp                  =        0.189  average propensity fo
+                                                           r private saving
+            PARAMETER ssg                  =        0.057  average propensity fo
+                                                           r gov. saving
+            PARAMETER taud                 =        0.256  direct tax rate
+GAMS Rev 235  WEX-VS8 23.5.1 x86/MS Windows             08/07/15 16:44:53 Page 3
+A Standard CGE Model in Ch. 6 (STDCGE, SEQ=276)
+Equation Listing    SOLVE stdcge Using NLP From line 326
+
+
+---- eqpy  =E=  composite factor agg. func.
+
+eqpy(BRD)..  Y(BRD) - (1)*F(CAP,BRD) - (1)*F(LAB,BRD) =E= 0 ; (LHS = 0)
+     
+eqpy(MLK)..  Y(MLK) - (1)*F(CAP,MLK) - (1)*F(LAB,MLK) =E= 0 ; (LHS = 0)
+     
+
+---- eqF  =E=  factor demand function
+
+eqF(CAP,BRD)..  - (0.571428571428571)*Y(BRD) + F(CAP,BRD) + (20)*pf(CAP)
+     
+      - (20)*py(BRD) =E= 0 ; (LHS = 0)
+     
+eqF(CAP,MLK)..  - (0.545454545454545)*Y(MLK) + F(CAP,MLK) + (30)*pf(CAP)
+     
+      - (30)*py(MLK) =E= 0 ; (LHS = 0)
+     
+eqF(LAB,BRD)..  - (0.428571428571429)*Y(BRD) + F(LAB,BRD) + (15)*pf(LAB)
+     
+      - (15)*py(BRD) =E= 0 ; (LHS = 0)
+     
+REMAINING ENTRY SKIPPED
+
+
+---- eqX  =E=  intermediate demand function
+
+eqX(BRD,BRD)..  X(BRD,BRD) - 0.287671232876712*Z(BRD) =E= 0 ; (LHS = 0)
+     
+eqX(BRD,MLK)..  X(BRD,MLK) - 0.111111111111111*Z(MLK) =E= 0 ; (LHS = 0)
+     
+eqX(MLK,BRD)..  X(MLK,BRD) - 0.232876712328767*Z(BRD) =E= 0 ; (LHS = 0)
+     
+REMAINING ENTRY SKIPPED
+
+
+---- eqY  =E=  composite factor demand function
+
+eqY(BRD)..  Y(BRD) - 0.479452054794521*Z(BRD) =E= 0 ; (LHS = 0)
+     
+eqY(MLK)..  Y(MLK) - 0.763888888888889*Z(MLK) =E= 0 ; (LHS = 0)
+     
+
+---- eqpzs  =E=  unit cost function
+
+eqpzs(BRD)..  - 0.479452054794521*py(BRD) + pz(BRD) - 0.287671232876712*pq(BRD)
+     
+      - 0.232876712328767*pq(MLK) =E= 0 ; (LHS = 0)
+     
+eqpzs(MLK)..  - 0.763888888888889*py(MLK) + pz(MLK) - 0.111111111111111*pq(BRD)
+     
+      - 0.125*pq(MLK) =E= 0 ; (LHS = 0)
+     
+
+---- eqTd  =E=  direct tax revenue function
+
+eqTd..  - 12.7777777777778*pf(CAP) - 10.2222222222222*pf(LAB) + Td =E= 0 ;
+     
+      (LHS = 0)
+     
+
+---- eqTz  =E=  production tax revenue function
+
+eqTz(BRD)..  - (0.0684931506849315)*Z(BRD) - (5)*pz(BRD) + Tz(BRD) =E= 0 ;
+     
+      (LHS = 0)
+     
+eqTz(MLK)..  - (0.0555555555555556)*Z(MLK) - (4)*pz(MLK) + Tz(MLK) =E= 0 ;
+     
+      (LHS = 0)
+     
+
+---- eqTm  =E=  import tariff revenue funtion
+
+eqTm(BRD)..  - (0.0769230769230769)*M(BRD) - (1)*pm(BRD) + Tm(BRD) =E= 0 ;
+     
+      (LHS = 0)
+     
+eqTm(MLK)..  - (0.181818181818182)*M(MLK) - (2)*pm(MLK) + Tm(MLK) =E= 0 ;
+     
+      (LHS = 0)
+     
+
+---- eqXg  =E=  government demand funtion
+
+eqXg(BRD)..  Xg(BRD) + (19)*pq(BRD) + (0.575757575757576)*Sg
+     
+      - (0.575757575757576)*Td - (0.575757575757576)*Tz(BRD)
+     
+      - (0.575757575757576)*Tz(MLK) - (0.575757575757576)*Tm(BRD)
+     
+      - (0.575757575757576)*Tm(MLK) =E= 0 ; (LHS = 0)
+     
+eqXg(MLK)..  Xg(MLK) + (14)*pq(MLK) + (0.424242424242424)*Sg
+     
+      - (0.424242424242424)*Td - (0.424242424242424)*Tz(BRD)
+     
+      - (0.424242424242424)*Tz(MLK) - (0.424242424242424)*Tm(BRD)
+     
+      - (0.424242424242424)*Tm(MLK) =E= 0 ; (LHS = 0)
+     
+
+---- eqXv  =E=  investment demand function
+
+eqXv(BRD)..  Xv(BRD) + (16)*pq(BRD) - (6.19354838709677)*epsilon
+     
+      - (0.516129032258065)*Sp - (0.516129032258065)*Sg =E= 0 ; (LHS = 0)
+     
+eqXv(MLK)..  Xv(MLK) + (15)*pq(MLK) - (5.80645161290323)*epsilon
+     
+      - (0.483870967741936)*Sp - (0.483870967741936)*Sg =E= 0 ; (LHS = 0)
+     
+
+---- eqSp  =E=  production tax revenue function
+
+eqSp..  - 9.44444444444444*pf(CAP) - 7.55555555555556*pf(LAB) + Sp =E= 0 ;
+     
+      (LHS = 0)
+     
+
+---- eqSg  =E=  government saving function
+
+eqSg..  Sg - 0.0571428571428571*Td - (0.171428571428571)*Tz(BRD)
+     
+      - (0.171428571428571)*Tz(MLK) - (0.514285714285714)*Tm(BRD)
+     
+      - (0.514285714285714)*Tm(MLK) =E= 0 ;
+     
+      (LHS = -0.857142857142857, INFES = 0.857142857142857 ****)
+     
+
+---- eqXp  =E=  household demand function
+
+eqXp(BRD)..  Xp(BRD) - (20)*pf(CAP) - (16)*pf(LAB) + (20)*pq(BRD) + (0.4)*Sp
+     
+      + (0.4)*Td =E= 0 ; (LHS = 0)
+     
+eqXp(MLK)..  Xp(MLK) - (30)*pf(CAP) - (24)*pf(LAB) + (30)*pq(MLK) + (0.6)*Sp
+     
+      + (0.6)*Td =E= 0 ; (LHS = 0)
+     
+
+---- eqpe  =E=  world export price equation
+
+eqpe(BRD)..  pe(BRD) - epsilon =E= 0 ; (LHS = 0)
+     
+eqpe(MLK)..  pe(MLK) - epsilon =E= 0 ; (LHS = 0)
+     
+
+---- eqpm  =E=  world import price  equation
+
+eqpm(BRD)..  pm(BRD) - epsilon =E= 0 ; (LHS = 0)
+     
+eqpm(MLK)..  pm(MLK) - epsilon =E= 0 ; (LHS = 0)
+     
+
+---- eqepsilon  =E=  balance of payments
+
+eqepsilon..  E(BRD) + E(MLK) - M(BRD) - M(MLK) =E= -12 ; (LHS = -12)
+     
+
+---- eqpqs  =E=  Armingotn function
+
+eqpqs(BRD)..  - (1.07692307692308)*M(BRD) + Q(BRD) - (1)*D(BRD) =E= 0 ;
+     
+      (LHS = 0)
+     
+eqpqs(MLK)..  - (1.18181818181818)*M(MLK) + Q(MLK) - (1)*D(MLK) =E= 0 ;
+     
+      (LHS = 0)
+     
+
+---- eqM  =E=  import demand function
+
+eqM(BRD)..  M(BRD) - (0.154761904761905)*Q(BRD) - (26)*pq(BRD) + (26)*pm(BRD)
+      =E= 0 ; (LHS = 0)
+     
+eqM(MLK)..  M(MLK) - (0.129411764705882)*Q(MLK) - (22)*pq(MLK) + (22)*pm(MLK)
+      =E= 0 ; (LHS = 0)
+     
+
+---- eqD  =E=  domestic good demand function
+
+eqD(BRD)..  - (0.833333333333333)*Q(BRD) + D(BRD) - (140)*pq(BRD)
+     
+      + (140)*pd(BRD) =E= 0 ; (LHS = 0)
+     
+eqD(MLK)..  - (0.847058823529412)*Q(MLK) + D(MLK) - (144)*pq(MLK)
+     
+      + (144)*pd(MLK) =E= 0 ; (LHS = 0)
+     
+
+---- eqpzd  =E=  transformation function
+
+eqpzd(BRD)..  Z(BRD) - (0.394344933591786)*E(BRD) - (0.394344933591786)*D(BRD)
+      =E= 0 ; (LHS = 42.2410951798407, INFES = 42.2410951798407 ****)
+     
+eqpzd(MLK)..  Z(MLK) - (0.323095945314844)*E(MLK) - (0.323095945314844)*D(MLK)
+      =E= 0 ; (LHS = 47.4447081560718, INFES = 47.4447081560718 ****)
+     
+
+---- eqDs  =E=  domestic good supply function
+
+eqDs(BRD)..  - (12.8183213683542)*Z(BRD) + D(BRD) + (1871.47491977972)*pz(BRD)
+     
+      - (1871.47491977972)*pd(BRD) =E= 0 ;
+     
+      (LHS = -865.737459889858, INFES = 865.737459889858 ****)
+     
+eqDs(MLK)..  - (25.209381395518)*Z(MLK) + D(MLK) + (3630.1509209546)*pz(MLK)
+     
+      - (3630.1509209546)*pd(MLK) =E= 0 ;
+     
+      (LHS = -1743.0754604773, INFES = 1743.0754604773 ****)
+     
+
+---- eqE  =E=  export supply function
+
+eqE(BRD)..  - (1.4649510135262)*Z(BRD) + E(BRD) + (213.882847974825)*pz(BRD)
+     
+      - (213.882847974825)*pd(BRD) =E= 0 ;
+     
+      (LHS = -98.9414239874123, INFES = 98.9414239874123 ****)
+     
+eqE(MLK)..  - (1.40052118863989)*Z(MLK) + E(MLK) + (201.675051164144)*pz(MLK)
+     
+      - (201.675051164144)*pd(MLK) =E= 0 ;
+     
+      (LHS = -96.8375255820721, INFES = 96.8375255820721 ****)
+     
+
+---- eqpqd  =E=  market clearing cond. for comp. good
+
+eqpqd(BRD)..  - X(BRD,BRD) - X(BRD,MLK) - Xp(BRD) - Xg(BRD) - Xv(BRD) + Q(BRD)
+      =E= 0 ; (LHS = 0)
+     
+eqpqd(MLK)..  - X(MLK,BRD) - X(MLK,MLK) - Xp(MLK) - Xg(MLK) - Xv(MLK) + Q(MLK)
+      =E= 0 ; (LHS = 0)
+     
+
+---- eqpf  =E=  factor market clearing condition
+
+eqpf(CAP)..  F(CAP,BRD) + F(CAP,MLK) =E= 50 ; (LHS = 50)
+     
+eqpf(LAB)..  F(LAB,BRD) + F(LAB,MLK) =E= 40 ; (LHS = 40)
+     
+
+---- obj  =E=  utility function [fictitious]
+
+obj..  - (0.510169800250316)*Xp(BRD) - (0.510169800250316)*Xp(MLK) + UU =E= 0 ;
+     
+      (LHS = -25.5084900125158, INFES = 25.5084900125158 ****)
+     
+GAMS Rev 235  WEX-VS8 23.5.1 x86/MS Windows             08/07/15 16:44:53 Page 4
+A Standard CGE Model in Ch. 6 (STDCGE, SEQ=276)
+Column Listing      SOLVE stdcge Using NLP From line 326
+
+
+---- Y  composite factor
+
+Y(BRD)
+                (.LO, .L, .UP, .M = 1E-5, 35, +INF, 0)
+        1       eqpy(BRD)
+      (-0.5714) eqF(CAP,BRD)
+      (-0.4286) eqF(LAB,BRD)
+        1       eqY(BRD)
+
+Y(MLK)
+                (.LO, .L, .UP, .M = 1E-5, 55, +INF, 0)
+        1       eqpy(MLK)
+      (-0.5455) eqF(CAP,MLK)
+      (-0.4545) eqF(LAB,MLK)
+        1       eqY(MLK)
+
+
+---- F  the h-th factor input by the j-th firm
+
+F(CAP,BRD)
+                (.LO, .L, .UP, .M = 1E-5, 20, +INF, 0)
+      (-1)      eqpy(BRD)
+        1       eqF(CAP,BRD)
+        1       eqpf(CAP)
+
+F(CAP,MLK)
+                (.LO, .L, .UP, .M = 1E-5, 30, +INF, 0)
+      (-1)      eqpy(MLK)
+        1       eqF(CAP,MLK)
+        1       eqpf(CAP)
+
+F(LAB,BRD)
+                (.LO, .L, .UP, .M = 1E-5, 15, +INF, 0)
+      (-1)      eqpy(BRD)
+        1       eqF(LAB,BRD)
+        1       eqpf(LAB)
+
+REMAINING ENTRY SKIPPED
+
+---- X  intermediate input
+
+X(BRD,BRD)
+                (.LO, .L, .UP, .M = 1E-5, 21, +INF, 0)
+        1       eqX(BRD,BRD)
+       -1       eqpqd(BRD)
+
+X(BRD,MLK)
+                (.LO, .L, .UP, .M = 1E-5, 8, +INF, 0)
+        1       eqX(BRD,MLK)
+       -1       eqpqd(BRD)
+
+X(MLK,BRD)
+                (.LO, .L, .UP, .M = 1E-5, 17, +INF, 0)
+        1       eqX(MLK,BRD)
+       -1       eqpqd(MLK)
+
+REMAINING ENTRY SKIPPED
+
+---- Z  output of the j-th good
+
+Z(BRD)
+                (.LO, .L, .UP, .M = 1E-5, 73, +INF, 0)
+       -0.2877  eqX(BRD,BRD)
+       -0.2329  eqX(MLK,BRD)
+       -0.4795  eqY(BRD)
+      (-0.0685) eqTz(BRD)
+        1       eqpzd(BRD)
+     (-12.8183) eqDs(BRD)
+      (-1.465)  eqE(BRD)
+
+Z(MLK)
+                (.LO, .L, .UP, .M = 1E-5, 72, +INF, 0)
+       -0.1111  eqX(BRD,MLK)
+       -0.125   eqX(MLK,MLK)
+       -0.7639  eqY(MLK)
+      (-0.0556) eqTz(MLK)
+        1       eqpzd(MLK)
+     (-25.2094) eqDs(MLK)
+      (-1.4005) eqE(MLK)
+
+
+---- Xp  household consumption of the i-th good
+
+Xp(BRD)
+                (.LO, .L, .UP, .M = 1E-5, 20, +INF, 0)
+        1       eqXp(BRD)
+       -1       eqpqd(BRD)
+      (-0.5102) obj
+
+Xp(MLK)
+                (.LO, .L, .UP, .M = 1E-5, 30, +INF, 0)
+        1       eqXp(MLK)
+       -1       eqpqd(MLK)
+      (-0.5102) obj
+
+
+---- Xg  government consumption
+
+Xg(BRD)
+                (.LO, .L, .UP, .M = 1E-5, 19, +INF, 0)
+        1       eqXg(BRD)
+       -1       eqpqd(BRD)
+
+Xg(MLK)
+                (.LO, .L, .UP, .M = 1E-5, 14, +INF, 0)
+        1       eqXg(MLK)
+       -1       eqpqd(MLK)
+
+
+---- Xv  investment demand
+
+Xv(BRD)
+                (.LO, .L, .UP, .M = 1E-5, 16, +INF, 0)
+        1       eqXv(BRD)
+       -1       eqpqd(BRD)
+
+Xv(MLK)
+                (.LO, .L, .UP, .M = 1E-5, 15, +INF, 0)
+        1       eqXv(MLK)
+       -1       eqpqd(MLK)
+
+
+---- E  exports
+
+E(BRD)
+                (.LO, .L, .UP, .M = 1E-5, 8, +INF, 0)
+        1       eqepsilon
+      (-0.3943) eqpzd(BRD)
+        1       eqE(BRD)
+
+E(MLK)
+                (.LO, .L, .UP, .M = 1E-5, 4, +INF, 0)
+        1       eqepsilon
+      (-0.3231) eqpzd(MLK)
+        1       eqE(MLK)
+
+
+---- M  imports
+
+M(BRD)
+                (.LO, .L, .UP, .M = 1E-5, 13, +INF, 0)
+      (-0.0769) eqTm(BRD)
+       -1       eqepsilon
+      (-1.0769) eqpqs(BRD)
+        1       eqM(BRD)
+
+M(MLK)
+                (.LO, .L, .UP, .M = 1E-5, 11, +INF, 0)
+      (-0.1818) eqTm(MLK)
+       -1       eqepsilon
+      (-1.1818) eqpqs(MLK)
+        1       eqM(MLK)
+
+
+---- Q  Armington's composite good
+
+Q(BRD)
+                (.LO, .L, .UP, .M = 1E-5, 84, +INF, 0)
+        1       eqpqs(BRD)
+      (-0.1548) eqM(BRD)
+      (-0.8333) eqD(BRD)
+        1       eqpqd(BRD)
+
+Q(MLK)
+                (.LO, .L, .UP, .M = 1E-5, 85, +INF, 0)
+        1       eqpqs(MLK)
+      (-0.1294) eqM(MLK)
+      (-0.8471) eqD(MLK)
+        1       eqpqd(MLK)
+
+
+---- D  domestic good
+
+D(BRD)
+                (.LO, .L, .UP, .M = 1E-5, 70, +INF, 0)
+      (-1)      eqpqs(BRD)
+        1       eqD(BRD)
+      (-0.3943) eqpzd(BRD)
+        1       eqDs(BRD)
+
+D(MLK)
+                (.LO, .L, .UP, .M = 1E-5, 72, +INF, 0)
+      (-1)      eqpqs(MLK)
+        1       eqD(MLK)
+      (-0.3231) eqpzd(MLK)
+        1       eqDs(MLK)
+
+
+---- pf  the h-th factor price
+
+pf(CAP)
+                (.LO, .L, .UP, .M = 1E-5, 1, +INF, 0)
+      (20)      eqF(CAP,BRD)
+      (30)      eqF(CAP,MLK)
+      -12.7778  eqTd
+       -9.4444  eqSp
+     (-20)      eqXp(BRD)
+     (-30)      eqXp(MLK)
+
+pf(LAB)
+                (.LO, .L, .UP, .M = 1, 1, 1, 0)
+      (15)      eqF(LAB,BRD)
+      (25)      eqF(LAB,MLK)
+      -10.2222  eqTd
+       -7.5556  eqSp
+     (-16)      eqXp(BRD)
+     (-24)      eqXp(MLK)
+
+
+---- py  composite factor price
+
+py(BRD)
+                (.LO, .L, .UP, .M = 1E-5, 1, +INF, 0)
+     (-20)      eqF(CAP,BRD)
+     (-15)      eqF(LAB,BRD)
+       -0.4795  eqpzs(BRD)
+
+py(MLK)
+                (.LO, .L, .UP, .M = 1E-5, 1, +INF, 0)
+     (-30)      eqF(CAP,MLK)
+     (-25)      eqF(LAB,MLK)
+       -0.7639  eqpzs(MLK)
+
+
+---- pz  supply price of the i-th good
+
+pz(BRD)
+                (.LO, .L, .UP, .M = 1E-5, 1, +INF, 0)
+        1       eqpzs(BRD)
+      (-5)      eqTz(BRD)
+    (1871.4749) eqDs(BRD)
+     (213.8828) eqE(BRD)
+
+pz(MLK)
+                (.LO, .L, .UP, .M = 1E-5, 1, +INF, 0)
+        1       eqpzs(MLK)
+      (-4)      eqTz(MLK)
+    (3630.1509) eqDs(MLK)
+     (201.6751) eqE(MLK)
+
+
+---- pq  Armington's composite good price
+
+pq(BRD)
+                (.LO, .L, .UP, .M = 1E-5, 1, +INF, 0)
+       -0.2877  eqpzs(BRD)
+       -0.1111  eqpzs(MLK)
+      (19)      eqXg(BRD)
+      (16)      eqXv(BRD)
+      (20)      eqXp(BRD)
+     (-26)      eqM(BRD)
+    (-140)      eqD(BRD)
+
+pq(MLK)
+                (.LO, .L, .UP, .M = 1E-5, 1, +INF, 0)
+       -0.2329  eqpzs(BRD)
+       -0.125   eqpzs(MLK)
+      (14)      eqXg(MLK)
+      (15)      eqXv(MLK)
+      (30)      eqXp(MLK)
+     (-22)      eqM(MLK)
+    (-144)      eqD(MLK)
+
+
+---- pe  export price in local currency
+
+pe(BRD)
+                (.LO, .L, .UP, .M = 1E-5, 1, +INF, 0)
+        1       eqpe(BRD)
+
+pe(MLK)
+                (.LO, .L, .UP, .M = 1E-5, 1, +INF, 0)
+        1       eqpe(MLK)
+
+
+---- pm  import price in local currency
+
+pm(BRD)
+                (.LO, .L, .UP, .M = 1E-5, 1, +INF, 0)
+      (-1)      eqTm(BRD)
+        1       eqpm(BRD)
+      (26)      eqM(BRD)
+
+pm(MLK)
+                (.LO, .L, .UP, .M = 1E-5, 1, +INF, 0)
+      (-2)      eqTm(MLK)
+        1       eqpm(MLK)
+      (22)      eqM(MLK)
+
+
+---- pd  the i-th domestic good price
+
+pd(BRD)
+                (.LO, .L, .UP, .M = 1E-5, 1, +INF, 0)
+     (140)      eqD(BRD)
+   (-1871.4749) eqDs(BRD)
+    (-213.8828) eqE(BRD)
+
+pd(MLK)
+                (.LO, .L, .UP, .M = 1E-5, 1, +INF, 0)
+     (144)      eqD(MLK)
+   (-3630.1509) eqDs(MLK)
+    (-201.6751) eqE(MLK)
+
+
+---- epsilon  exchange rate
+
+epsilon
+                (.LO, .L, .UP, .M = 1E-5, 1, +INF, 0)
+      (-6.1935) eqXv(BRD)
+      (-5.8065) eqXv(MLK)
+       -1       eqpe(BRD)
+       -1       eqpe(MLK)
+       -1       eqpm(BRD)
+       -1       eqpm(MLK)
+
+
+---- Sp  private saving
+
+Sp
+                (.LO, .L, .UP, .M = 1E-5, 17, +INF, 0)
+      (-0.5161) eqXv(BRD)
+      (-0.4839) eqXv(MLK)
+        1       eqSp
+       (0.4)    eqXp(BRD)
+       (0.6)    eqXp(MLK)
+
+
+---- Sg  government saving
+
+Sg
+                (.LO, .L, .UP, .M = 1E-5, 2, +INF, 0)
+       (0.5758) eqXg(BRD)
+       (0.4242) eqXg(MLK)
+      (-0.5161) eqXv(BRD)
+      (-0.4839) eqXv(MLK)
+        1       eqSg
+
+
+---- Td  direct tax
+
+Td
+                (.LO, .L, .UP, .M = 1E-5, 23, +INF, 0)
+        1       eqTd
+      (-0.5758) eqXg(BRD)
+      (-0.4242) eqXg(MLK)
+       -0.0571  eqSg
+       (0.4)    eqXp(BRD)
+       (0.6)    eqXp(MLK)
+
+
+---- Tz  production tax
+
+Tz(BRD)
+                (.LO, .L, .UP, .M = 0, 5, +INF, 0)
+        1       eqTz(BRD)
+      (-0.5758) eqXg(BRD)
+      (-0.4242) eqXg(MLK)
+      (-0.1714) eqSg
+
+Tz(MLK)
+                (.LO, .L, .UP, .M = 0, 4, +INF, 0)
+        1       eqTz(MLK)
+      (-0.5758) eqXg(BRD)
+      (-0.4242) eqXg(MLK)
+      (-0.1714) eqSg
+
+
+---- Tm  import tariff
+
+Tm(BRD)
+                (.LO, .L, .UP, .M = 0, 1, +INF, 0)
+        1       eqTm(BRD)
+      (-0.5758) eqXg(BRD)
+      (-0.4242) eqXg(MLK)
+      (-0.5143) eqSg
+
+Tm(MLK)
+                (.LO, .L, .UP, .M = 0, 2, +INF, 0)
+        1       eqTm(MLK)
+      (-0.5758) eqXg(BRD)
+      (-0.4242) eqXg(MLK)
+      (-0.5143) eqSg
+
+
+---- UU  utility [fictitious]
+
+UU
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       obj
+
+GAMS Rev 235  WEX-VS8 23.5.1 x86/MS Windows             08/07/15 16:44:53 Page 5
+A Standard CGE Model in Ch. 6 (STDCGE, SEQ=276)
+Model Statistics    SOLVE stdcge Using NLP From line 326
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS          25     SINGLE EQUATIONS           49
+BLOCKS OF VARIABLES          25     SINGLE VARIABLES           49
+NON ZERO ELEMENTS           179     NON LINEAR N-Z             94
+DERIVATIVE POOL              13     CONSTANT POOL              68
+CODE LENGTH                 725
+
+
+GENERATION TIME      =        0.016 SECONDS      4 Mb  WIN235-235 Jul  2, 2010
+
+
+EXECUTION TIME       =        0.016 SECONDS      4 Mb  WIN235-235 Jul  2, 2010
+GAMS Rev 235  WEX-VS8 23.5.1 x86/MS Windows             08/07/15 16:44:53 Page 6
+A Standard CGE Model in Ch. 6 (STDCGE, SEQ=276)
+Solution Report     SOLVE stdcge Using NLP From line 326
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   stdcge              OBJECTIVE  UU
+     TYPE    NLP                 DIRECTION  MAXIMIZE
+     SOLVER  CONOPT              FROM LINE  326
+
+**** SOLVER STATUS     1 Normal Completion         
+**** MODEL STATUS      5 Locally Infeasible        
+**** OBJECTIVE VALUE               90.9807
+
+ RESOURCE USAGE, LIMIT          0.016      1000.000
+ ITERATION COUNT, LIMIT        27    2000000000
+ EVALUATION ERRORS              0             0
+ 
+ 
+    C O N O P T 3   version 3.14U
+    Copyright (C)   ARKI Consulting and Development A/S
+                    Bagsvaerdvej 246 A
+                    DK-2880 Bagsvaerd, Denmark
+ 
+ Using default options.
+ 
+ 
+ ** Infeasible solution. There are no superbasic variables.
+ 
+ 
+ CONOPT time Total                            0.012 seconds
+   of which: Function evaluations             0.001 =  8.3%
+             1st Derivative evaluations       0.001 =  8.3%
+ 
+ Workspace           =     0.34 Mbytes
+    Estimate         =     0.34 Mbytes
+    Max used         =     0.08 Mbytes
+
+---- EQU eqpy  composite factor agg. func.
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .    5.0642E-4      
+MLK      .         .         .    3.6784E-4      
+
+---- EQU eqF  factor demand function
+
+           LOWER     LEVEL     UPPER    MARGINAL
+
+CAP.BRD      .         .         .       -0.012      
+CAP.MLK      .         .         .       -0.012      
+LAB.BRD      .         .         .       -0.012      
+LAB.MLK      .         .         .       -0.012      
+
+---- EQU eqX  intermediate demand function
+
+           LOWER     LEVEL     UPPER    MARGINAL
+
+BRD.BRD      .         .         .       -0.003      
+BRD.MLK      .         .         .       -0.003      
+MLK.BRD      .         .         .       -0.003      
+MLK.MLK      .         .         .       -0.003      
+
+---- EQU eqY  composite factor demand function
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .       -0.012      
+MLK      .         .         .       -0.012      
+
+---- EQU eqpzs  unit cost function
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .        0.947      
+MLK      .         .         .        0.771      
+
+                       LOWER     LEVEL     UPPER    MARGINAL
+
+---- EQU eqTd            .         .         .    2.8209E-6      
+
+  eqTd  direct tax revenue function
+
+---- EQU eqTz  production tax revenue function
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .       -0.012      
+MLK      .         .         .       -0.012      
+
+---- EQU eqTm  import tariff revenue funtion
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .       -0.012      
+MLK      .         .         .       -0.012      
+
+---- EQU eqXg  government demand funtion
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .       -0.003      
+MLK      .         .         .       -0.003      
+
+---- EQU eqXv  investment demand function
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .       -0.003      
+MLK      .         .         .       -0.003      
+
+                       LOWER     LEVEL     UPPER    MARGINAL
+
+---- EQU eqSp            .         .         .    1.9007E-6      
+---- EQU eqSg            .         .         .    -9.760E-7      
+
+  eqSp  production tax revenue function
+  eqSg  government saving function
+
+---- EQU eqXp  household demand function
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .       -0.003      
+MLK      .         .         .       -0.003      
+
+---- EQU eqpe  world export price equation
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .         EPS       
+MLK      .         .         .         EPS       
+
+---- EQU eqpm  world import price  equation
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .        0.072      
+MLK      .         .         .        0.067      
+
+                       LOWER     LEVEL     UPPER    MARGINAL
+
+---- EQU eqepsilon    -12.000   -12.000   -12.000    -0.002      
+
+  eqepsilon  balance of payments
+
+---- EQU eqpqs  Armingotn function
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .        0.002      
+MLK      .         .         .        0.002      
+
+---- EQU eqM  import demand function
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .    -6.653E-4      
+MLK      .         .         .    -8.611E-4      
+
+---- EQU eqD  domestic good demand function
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .       -0.002      
+MLK      .         .         .       -0.002      
+
+---- EQU eqpzd  transformation function
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .       -0.012      
+MLK      .        1.411      .       -0.016 INFES
+
+---- EQU eqDs  domestic good supply function
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .       -0.001      
+MLK      .         .         .       -0.002      
+
+---- EQU eqE  export supply function
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .       -0.002      
+MLK      .         .         .       -0.003      
+
+---- EQU eqpqd  market clearing cond. for comp. good
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .         .         .       -0.003      
+MLK      .         .         .       -0.003      
+
+---- EQU eqpf  factor market clearing condition
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+CAP    50.000    50.000    50.000     0.012      
+LAB    40.000    40.000    40.000     0.012      
+
+                       LOWER     LEVEL     UPPER    MARGINAL
+
+---- EQU obj             .         .         .         EPS       
+
+  obj  utility function [fictitious]
+
+---- VAR Y  composite factor
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD 1.0000E-5    39.441     +INF       .         
+MLK 1.0000E-5    50.559     +INF       .         
+
+---- VAR F  the h-th factor input by the j-th firm
+
+           LOWER     LEVEL     UPPER    MARGINAL
+
+CAP.BRD 1.0000E-5    22.488     +INF       .         
+CAP.MLK 1.0000E-5    27.512     +INF       .         
+LAB.BRD 1.0000E-5    16.954     +INF       .         
+LAB.MLK 1.0000E-5    23.046     +INF       .         
+
+---- VAR X  intermediate input
+
+           LOWER     LEVEL     UPPER    MARGINAL
+
+BRD.BRD 1.0000E-5    23.665     +INF       .         
+BRD.MLK 1.0000E-5     7.354     +INF       .         
+MLK.BRD 1.0000E-5    19.157     +INF       .         
+MLK.MLK 1.0000E-5     8.273     +INF       .         
+
+---- VAR Z  output of the j-th good
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD 1.0000E-5    82.263     +INF       .         
+MLK 1.0000E-5    66.186     +INF       .         
+
+---- VAR Xp  household consumption of the i-th good
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD 1.0000E-5    73.568     +INF       .         
+MLK 1.0000E-5   104.823     +INF       .         
+
+---- VAR Xg  government consumption
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD 1.0000E-5    62.262     +INF       .         
+MLK 1.0000E-5    43.579     +INF       .         
+
+---- VAR Xv  investment demand
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD 1.0000E-5    43.517     +INF       .         
+MLK 1.0000E-5    38.752     +INF       .         
+
+---- VAR E  exports
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD 1.0000E-5    21.395     +INF       .         
+MLK 1.0000E-5    10.552     +INF       .         
+
+---- VAR M  imports
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD 1.0000E-5    22.591     +INF       .         
+MLK 1.0000E-5    21.356     +INF       .         
+
+---- VAR Q  Armington's composite good
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD 1.0000E-5   210.366     +INF       .         
+MLK 1.0000E-5   214.584     +INF       .         
+
+---- VAR D  domestic good
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD 1.0000E-5   187.210     +INF       .         
+MLK 1.0000E-5   189.932     +INF       .         
+
+---- VAR pf  the h-th factor price
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+CAP 1.0000E-5     1.005     +INF       .         
+LAB     1.000     1.000     1.000      EPS       
+
+---- VAR py  composite factor price
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD 1.0000E-5     1.003     +INF       .         
+MLK 1.0000E-5     1.003     +INF       .         
+
+---- VAR pz  supply price of the i-th good
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD 1.0000E-5     0.626     +INF       .         
+MLK 1.0000E-5     0.832     +INF       .         
+
+---- VAR pq  Armington's composite good price
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD 1.0000E-5     0.273     +INF       .         
+MLK 1.0000E-5     0.287     +INF       .         
+
+---- VAR pe  export price in local currency
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD 1.0000E-5     0.327     +INF       .         
+MLK 1.0000E-5     0.327     +INF       .         
+
+---- VAR pm  import price in local currency
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD 1.0000E-5     0.327     +INF       .         
+MLK 1.0000E-5     0.327     +INF       .         
+
+---- VAR pd  the i-th domestic good price
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD 1.0000E-5     0.264     +INF       .         
+MLK 1.0000E-5     0.281     +INF       .         
+
+                       LOWER     LEVEL     UPPER    MARGINAL
+
+---- VAR epsilon    1.0000E-5     0.327     +INF       .         
+---- VAR Sp         1.0000E-5    17.049     +INF       .         
+---- VAR Sg         1.0000E-5     2.011     +INF       .         
+---- VAR Td         1.0000E-5    23.067     +INF       .         
+
+  epsilon  exchange rate
+  Sp  private saving
+  Sg  government saving
+  Td  direct tax
+
+---- VAR Tz  production tax
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .        3.528     +INF       .         
+MLK      .        3.060     +INF       .         
+
+---- VAR Tm  import tariff
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+BRD      .        0.569     +INF       .         
+MLK      .        1.271     +INF       .         
+
+                       LOWER     LEVEL     UPPER    MARGINAL
+
+---- VAR UU             -INF     90.981     +INF       .         
+
+  UU  utility [fictitious]
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             1 INFEASIBLE (INFES)
+                    SUM      1.411
+                    MAX      1.411
+                    MEAN     1.411
+                             0  UNBOUNDED
+                             0     ERRORS
+
+
+EXECUTION TIME       =        0.015 SECONDS      2 Mb  WIN235-235 Jul  2, 2010
+
+
+USER: Gary Goldstein                                 G010614:2121CA-WIN
+      Decision Ware, Inc.                                        DC2807
+
+
+**** FILE SUMMARY
+
+Input      D:\Final Standar CGE model.gms
+Output     C:\Users\Mónica\Documents\gamsdir\projdir\Final Standar CGE model.lst

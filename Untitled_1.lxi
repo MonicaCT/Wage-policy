@@ -1,0 +1,41 @@
+B 2 C o m p i l a t i o n
+B 103 E x e c u t i o n
+I 104 X0
+I 110 F0
+I 118 Z0
+I 123 FF
+I 128 alpha
+I 133 beta
+I 141 b
+B 148 Equation Listing    SOLVE splcge Using NLP From line 91
+D 149 eqX
+D 161 eqpz
+D 168 eqF
+D 185 eqpx
+D 192 eqpf
+D 199 eqZ
+D 206 obj
+B 215 Column Listing      SOLVE splcge Using NLP From line 91
+E 216 X
+E 232 F
+E 254 Z
+E 271 px
+E 284 pz
+E 299 pf
+E 316 UU
+B 325 Model Statistics    SOLVE splcge Using NLP From line 91
+B 343 Solution Report     SOLVE splcge Using NLP From line 91
+F 384 eqX
+F 391 eqpz
+F 398 eqF
+F 407 eqpx
+F 414 eqpf
+F 421 eqZ
+F 426 obj
+G 429 X
+G 436 F
+G 445 Z
+G 452 px
+G 459 pz
+G 466 pf
+G 473 UU

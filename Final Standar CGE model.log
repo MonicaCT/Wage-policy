@@ -1,0 +1,46 @@
+
+--- Job Final Standar CGE model.gms Start 08/07/15 16:44:53 WEX-VS8 23.5.1 x86/MS Windows        
+GAMS Rev 235  Copyright (C) 1987-2010 GAMS Development. All rights reserved
+Licensee: Gary Goldstein                                 G010614:2121CA-WIN
+          Decision Ware, Inc.                                        DC2807
+--- Starting compilation
+--- Final Standar CGE model.gms(326) 3 Mb
+--- Starting execution: elapsed 0:00:00.009
+--- Final Standar CGE model.gms(322) 4 Mb
+--- Generating NLP model stdcge
+--- Final Standar CGE model.gms(326) 6 Mb
+---   49 rows  49 columns  179 non-zeroes
+---   725 nl-code  94 nl-non-zeroes
+--- Final Standar CGE model.gms(326) 4 Mb
+--- Executing CONOPT: elapsed 0:00:00.016
+C O N O P T 3    Jul  4, 2010 23.5.1 WIN 18414.18495 VS8 x86/MS Windows    
+ 
+ 
+    C O N O P T 3   version 3.14U
+    Copyright (C)   ARKI Consulting and Development A/S
+                    Bagsvaerdvej 246 A
+                    DK-2880 Bagsvaerd, Denmark
+ 
+ Using default options.
+ 
+ Reading Data
+ 
+   Iter Phase Ninf   Infeasibility   RGmax    NSB   Step InItr MX OK
+      0   0        2.9206433061E+03 (Input point)
+                                Pre-triangular equations:        0
+                                Post-triangular equations:       3
+      1   0        2.8951348161E+03 (After pre-processing)
+      2   0        5.0559929521E+00 (After scaling)
+     10   0     5  4.0356498910E+00               1.0E+00      F  T
+     16   1     5  2.9730602972E+00 9.1E-01     4 3.1E-01    3 F  F
+     21   1     4  4.9713767247E-01 3.9E-01     4 6.8E-01      T  T
+     26   1     1  2.2039547911E-02 0.0E+00     0 0.0E+00    0 F  T
+     27   1     1  2.2039547911E-02 0.0E+00     0
+ 
+ ** Infeasible solution. There are no superbasic variables.
+ 
+--- Restarting execution
+--- Final Standar CGE model.gms(326) 0 Mb
+--- Reading solution for model stdcge
+*** Status: Normal completion
+--- Job Final Standar CGE model.gms Stop 08/07/15 16:44:55 elapsed 0:00:01.451
